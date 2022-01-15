@@ -1,0 +1,8 @@
+define b 12
+int a,somma;
+
+read(a);
+
+somma = a + b;
+
+write(somma);

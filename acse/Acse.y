@@ -51,6 +51,13 @@ int num_error;       /* the number of errors found in the code. This value
 int num_warning;     /* As for the `num_error' global variable, this one
                       * keeps track of all the warning messages displayed */
 
+typedef struct t_macro {
+   char *ID;
+   int value;
+} t_macro;
+
+t_list *macros = NULL;
+
 /* errorcode is defined inside "axe_engine.c" */
 extern int errorcode;   /* this variable is used to test if an error is found
                          * while parsing the input file. It also is set
@@ -125,6 +132,7 @@ extern void yyerror(const char*);
 %token RETURN
 %token READ
 %token WRITE
+%token DEFINE
 
 %token <label> DO
 %token <while_stmt> WHILE
@@ -167,7 +175,7 @@ extern void yyerror(const char*);
       2. A list of instructions. (at least one instruction!).
  * When the rule associated with the non-terminal `program' is executed,
  * the parser notifies it to the `program' singleton instance. */
-program  : var_declarations statements EOF_TOK
+program  : macro_declarations var_declarations statements EOF_TOK
          {
             /* Notify the end of the program. Once called
              * the function `set_end_Program' - if necessary -
@@ -179,6 +187,18 @@ program  : var_declarations statements EOF_TOK
             YYACCEPT;
          }
 ;
+
+macro_declarations: macro_declaration macro_declarations
+                  | /* empty */
+
+macro_declaration: DEFINE IDENTIFIER NUMBER
+                  {
+                     t_macro *macro = malloc(sizeof(t_macro));
+                     macro->ID = strdup($2);
+                     macro->value = $3;
+                     printMessage("added macro:");
+                     macros = addElement(macros, macro, 0);
+                  }
 
 var_declarations : var_declarations var_declaration   { /* does nothing */ }
                  | /* empty */                        { /* does nothing */ }
@@ -460,15 +480,25 @@ write_statement : WRITE LPAR exp RPAR
 
 exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
    | IDENTIFIER  {
-                     int location;
-   
-                     /* get the location of the symbol with the given ID */
-                     location = get_symbol_location(program, $1, 0);
-                     
-                     /* return the register location of IDENTIFIER as
-                      * a value for `exp' */
-                     $$ = create_expression (location, REGISTER);
-
+                     t_macro *macro = NULL;
+                     for (t_list *cur = macros; cur != NULL; cur = cur->next) {
+                        if(!strcmp(((t_macro *)(cur->data))->ID, $1)) {
+                           macro = cur->data;
+                           break;
+                        }
+                     }
+                     if(macro != NULL) {
+                        $$ = create_expression (macro->value, IMMEDIATE);
+                     } else {
+                        int location;
+      
+                        /* get the location of the symbol with the given ID */
+                        location = get_symbol_location(program, $1, 0);
+                        
+                        /* return the register location of IDENTIFIER as
+                        * a value for `exp' */
+                        $$ = create_expression (location, REGISTER);
+                     }
                      /* free the memory associated with the IDENTIFIER */
                      free($1);
    }
