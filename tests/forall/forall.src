@@ -2,6 +2,6 @@ int a,b;
 
 read(b);
 
-forall( a = 0 to b) {
+forall( a = 0 to a + 4) {
 	write(a);
 }

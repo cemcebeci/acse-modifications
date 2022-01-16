@@ -259,7 +259,7 @@ control_statement : if_statement         { /* does nothing */ }
             | forall_statement           {}
 ;
 
-forall_statement: FORALL LPAR IDENTIFIER ASSIGN exp TO exp RPAR {
+forall_statement: FORALL LPAR IDENTIFIER ASSIGN exp TO {
                /* Initial assignment */
                $1.iterator_reg = get_symbol_location(program, $3, 0);
 
@@ -274,12 +274,12 @@ forall_statement: FORALL LPAR IDENTIFIER ASSIGN exp TO exp RPAR {
 
                /* Condition */
                $1.label_condition = assignNewLabel(program);
-
+            } exp RPAR {
                /* Modify PSW */
                t_axe_expression iterator_exp;
                iterator_exp.expression_type = REGISTER;
                iterator_exp.value = $1.iterator_reg;
-               handle_bin_numeric_op(program, iterator_exp, $7, SUB);
+               handle_bin_numeric_op(program, iterator_exp, $8, SUB);
 
                /* Jump to end if PSW contains 0 */ 
                $1.label_end = newLabel(program);
