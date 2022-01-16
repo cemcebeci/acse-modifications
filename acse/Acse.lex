@@ -66,6 +66,7 @@ ID       [a-zA-Z_][a-zA-Z0-9_]*
 ")"               { return RPAR; }
 ";"               { return SEMI; }
 "+"               { return PLUS; }
+"%"               { return MODULO; }
 "-"               { return MINUS; }
 "*"               { return MUL_OP; }
 "/"               { return DIV_OP; }

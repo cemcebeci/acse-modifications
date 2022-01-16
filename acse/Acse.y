@@ -117,7 +117,7 @@ extern void yyerror(const char*);
 
 %token EOF_TOK /* end of file */
 %token LBRACE RBRACE LPAR RPAR LSQUARE RSQUARE
-%token SEMI PLUS MINUS MUL_OP DIV_OP
+%token SEMI PLUS MINUS MUL_OP DIV_OP MODULO
 %token AND_OP OR_OP NOT_OP
 %token ASSIGN LT GT SHL_OP SHR_OP EQ NOTEQ LTEQ GTEQ
 %token ANDAND OROR
@@ -153,7 +153,7 @@ extern void yyerror(const char*);
 %left LT GT LTEQ GTEQ
 %left SHL_OP SHR_OP
 %left MINUS PLUS
-%left MUL_OP DIV_OP
+%left MUL_OP DIV_OP MODULO
 %right NOT_OP
 
 /*=========================================================================
@@ -512,6 +512,12 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
    | exp AND_OP exp { $$ = handle_bin_numeric_op(program, $1, $3, ANDB); }
    | exp OR_OP exp  { $$ = handle_bin_numeric_op(program, $1, $3, ORB); }
    | exp PLUS exp   { $$ = handle_bin_numeric_op(program, $1, $3, ADD); }
+   | exp MODULO exp { 
+                     $$ = handle_bin_numeric_op(program, $1, $3, ADD);
+                     t_axe_expression a = handle_bin_numeric_op(program, $1, $3, DIV);
+                     t_axe_expression b = handle_bin_numeric_op(program, a, $3, MUL);
+                     $$ = handle_bin_numeric_op(program, $1, b, SUB);
+                    }
    | exp MINUS exp  { $$ = handle_bin_numeric_op(program, $1, $3, SUB); }
    | exp MUL_OP exp { $$ = handle_bin_numeric_op(program, $1, $3, MUL); }
    | exp DIV_OP exp { $$ = handle_bin_numeric_op(program, $1, $3, DIV); }
