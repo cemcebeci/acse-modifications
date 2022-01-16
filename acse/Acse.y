@@ -94,6 +94,8 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 extern int yylex(void);
 extern void yyerror(const char*);
 
+int implicit_register;
+
 %}
 %expect 1
 
@@ -132,6 +134,7 @@ extern void yyerror(const char*);
 %token <label> ELSE
 %token <intval> TYPE
 %token <svalue> IDENTIFIER
+%token IMPLICIT
 %token <intval> NUMBER
 
 %type <expr> exp
@@ -247,8 +250,22 @@ statements  : statements statement       { /* does nothing */ }
 statement   : assign_statement SEMI      { /* does nothing */ }
             | control_statement          { /* does nothing */ }
             | read_write_statement SEMI  { /* does nothing */ }
+            | implicit_assign_statment SEMI { /* does nothing */ }
             | SEMI            { gen_nop_instruction(program); }
 ;
+
+implicit_assign_statment : exp  { 
+      implicit_register = getNewRegister(program);
+      if($1.expression_type == IMMEDIATE) {
+         gen_addi_instruction(program, implicit_register, REG_0, $1.value);
+      } else {
+         gen_add_instruction( program,
+                              implicit_register,
+                              REG_0,
+                              $1.value,
+                              CG_DIRECT_ALL);
+      }
+   };
 
 control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
@@ -544,6 +561,9 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
                            (program, exp_r0, $2, SUB);
                   }
                }
+   | IMPLICIT  {
+      $$ = create_expression(implicit_register, REGISTER);
+   }
 ;
 
 %%

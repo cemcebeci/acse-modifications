@@ -102,3 +102,5 @@ ID       [a-zA-Z_][a-zA-Z0-9_]*
                     num_error++;
                     return (-1); /* invalid token */ }
 <INITIAL><<EOF>>  { return EOF_TOK; }
+
+"$implicit"       { return IMPLICIT; }

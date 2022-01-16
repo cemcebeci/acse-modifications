@@ -1,0 +1,10 @@
+int a,b;
+
+read(a);
+read(b);
+
+a + b + 3;
+
+$implicit + 5;
+
+write($implicit);
