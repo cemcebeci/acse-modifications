@@ -90,7 +90,6 @@ t_reg_allocator *RA;       /* Register allocator. It implements the "Linear
 
 t_io_infos *file_infos;    /* input and output files used by the compiler */
 
-
 extern int yylex(void);
 extern void yyerror(const char*);
 
@@ -109,6 +108,7 @@ extern void yyerror(const char*);
    t_list *list;
    t_axe_label *label;
    t_while_statement while_stmt;
+   t_forall_statement forall_stmt;
 } 
 /*=========================================================================
                                TOKENS 
@@ -125,9 +125,11 @@ extern void yyerror(const char*);
 %token RETURN
 %token READ
 %token WRITE
+%token TO DOWNTO
 
 %token <label> DO
 %token <while_stmt> WHILE
+%token <forall_stmt> FORALL
 %token <label> IF
 %token <label> ELSE
 %token <intval> TYPE
@@ -254,6 +256,44 @@ control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
+            | forall_statement           {}
+;
+
+forall_statement: FORALL LPAR IDENTIFIER ASSIGN exp TO exp RPAR {
+               /* Initial assignment */
+               $1.iterator_reg = get_symbol_location(program, $3, 0);
+
+               if ($5.expression_type == IMMEDIATE)
+                  gen_move_immediate(program, $1.iterator_reg, $5.value);
+               else
+                  gen_add_instruction(program,
+                                      $1.iterator_reg,
+                                      REG_0,
+                                      $5.value,
+                                      CG_DIRECT_ALL);
+
+               /* Condition */
+               $1.label_condition = assignNewLabel(program);
+
+               /* Modify PSW */
+               t_axe_expression iterator_exp;
+               iterator_exp.expression_type = REGISTER;
+               iterator_exp.value = $1.iterator_reg;
+               handle_bin_numeric_op(program, iterator_exp, $7, SUB);
+
+               /* Jump to end if PSW contains 0 */ 
+               $1.label_end = newLabel(program);
+               gen_beq_instruction(program, $1.label_end, 0);      
+            } code_block {
+               /* increment */
+               gen_addi_instruction(program, $1.iterator_reg, $1.iterator_reg, 1);
+
+               /* unconditional jump to the condition_label */
+               gen_bt_instruction(program, $1.label_condition, 0);
+
+               /* assign the end label, loop related code has ended */
+               assignLabel(program, $1.label_end);
+            }
 ;
 
 read_write_statement : read_statement  { /* does nothing */ }

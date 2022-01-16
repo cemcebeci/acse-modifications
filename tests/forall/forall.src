@@ -1,0 +1,7 @@
+int a,b;
+
+read(b);
+
+forall( a = 0 to b) {
+	write(a);
+}
