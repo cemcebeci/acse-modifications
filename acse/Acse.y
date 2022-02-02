@@ -94,7 +94,7 @@ t_io_infos *file_infos;    /* input and output files used by the compiler */
 extern int yylex(void);
 extern void yyerror(const char*);
 
-int implicit_register;
+t_axe_expression implicit_expr;
 
 %}
 %expect 1
@@ -254,8 +254,11 @@ statement   : assign_statement SEMI      { /* does nothing */ }
             | SEMI            { gen_nop_instruction(program); }
 ;
 
-implicit_assign_statment : exp  { 
-      implicit_register = getNewRegister(program);
+implicit_assign_statment : exp  {
+      t_axe_expression zero  = create_expression(0, IMMEDIATE);
+      implicit_expr = handle_bin_numeric_op(program, zero, $1, ADD);
+
+      /* implicit_register = getNewRegister(program);
       if($1.expression_type == IMMEDIATE) {
          gen_addi_instruction(program, implicit_register, REG_0, $1.value);
       } else {
@@ -263,8 +266,8 @@ implicit_assign_statment : exp  {
                               implicit_register,
                               REG_0,
                               $1.value,
-                              CG_DIRECT_ALL);
-      }
+                              CG_DIRECT_ALL); 
+      } */
    };
 
 control_statement : if_statement         { /* does nothing */ }
@@ -562,7 +565,7 @@ exp: NUMBER      { $$ = create_expression ($1, IMMEDIATE); }
                   }
                }
    | IMPLICIT  {
-      $$ = create_expression(implicit_register, REGISTER);
+      $$ = implicit_expr;
    }
 ;
 
