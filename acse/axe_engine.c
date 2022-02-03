@@ -462,6 +462,7 @@ int getNewRegister(t_program_infos *program)
    program->current_register++;
    
    /* return the current label identifier */
+   printf("NEW REG: %d \n", result);
    return result;
 }
 

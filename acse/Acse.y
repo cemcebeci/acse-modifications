@@ -109,6 +109,7 @@ extern void yyerror(const char*);
    t_list *list;
    t_axe_label *label;
    t_while_statement while_stmt;
+   t_converge_statement conv_stmt;
 } 
 /*=========================================================================
                                TOKENS 
@@ -133,6 +134,7 @@ extern void yyerror(const char*);
 %token <intval> TYPE
 %token <svalue> IDENTIFIER
 %token <intval> NUMBER
+%token <conv_stmt> CONV
 
 %type <expr> exp
 %type <decl> declaration
@@ -254,7 +256,32 @@ control_statement : if_statement         { /* does nothing */ }
             | while_statement            { /* does nothing */ }
             | do_while_statement SEMI    { /* does nothing */ }
             | return_statement SEMI      { /* does nothing */ }
+            | converge_statement         { } 
 ;
+
+converge_statement : CONV LPAR IDENTIFIER RPAR {
+                     $1.label_set = newLabel(program);
+                     gen_bt_instruction(program, $1.label_set, 0);
+
+                     $1.label_end = newLabel(program);
+                     $1.label_cond = newLabel(program);
+                     $1.reg = getNewRegister(program);
+
+                     int var_location = get_symbol_location(program, $3, 0);
+
+                     // cond
+                     assignLabel(program, $1.label_cond);
+                     int temp = getNewRegister(program);
+                     gen_sub_instruction(program, REG_0, $1.reg, var_location, CG_DIRECT_ALL );
+                     gen_beq_instruction(program, $1.label_end, 0);
+
+                     // set
+                     assignLabel(program, $1.label_set);
+                     gen_add_instruction(program, $1.reg, REG_0, var_location, CG_DIRECT_ALL );
+                  } code_block {
+                     gen_bt_instruction(program, $1.label_cond, 0);
+                     assignLabel(program, $1.label_end);
+                  }
 
 read_write_statement : read_statement  { /* does nothing */ }
                      | write_statement { /* does nothing */ }
